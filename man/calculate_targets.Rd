@@ -35,22 +35,22 @@ based on the calibration target statistics specified.
 }
 \section{Functions}{
 \itemize{
-\item \code{target_prob_hivdx}: Probability of being diagnosed with HIV among
+\item \code{target_prob_hivdx()}: Probability of being diagnosed with HIV among
 those with HIV, by race and age.
 
-\item \code{target_prob_agedx_byrace}: Calculate age distribution among those
+\item \code{target_prob_agedx_byrace()}: Calculate age distribution among those
 diagnosed with HIV, by race/ethnicity.
 
-\item \code{target_prob_vls}: Calculate probability of viral suppression
+\item \code{target_prob_vls()}: Calculate probability of viral suppression
 among those with diagnosed HIV, by race/ethnicity and age.
 
-\item \code{target_prob_prep_byrace}: Calculate probability of PrEP use among
+\item \code{target_prob_prep_byrace()}: Calculate probability of PrEP use among
 indicated agents, by race/ethnicity.
 
-\item \code{target_prop_anatsites_tested}: Return proportion of anatomic sites tested
+\item \code{target_prop_anatsites_tested()}: Return proportion of anatomic sites tested
 among MSM seeking testing at the clinic.
 
-\item \code{target_prob_gcpos_tested_anatsites}: Return probability of being GC+ at tested
+\item \code{target_prob_gcpos_tested_anatsites()}: Return probability of being GC+ at tested
 anatomic sites.
-}}
 
+}}

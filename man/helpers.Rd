@@ -44,15 +44,15 @@ in this package won't fail in the absence of the ARTnet code repo.)
 }
 \section{Functions}{
 \itemize{
-\item \code{raceage_grid}: Produce a lookup table of all possible combinations of
+\item \code{raceage_grid()}: Produce a lookup table of all possible combinations of
 race/ethnicity and age group.
 
-\item \code{test_xgc}: Helper function to use as input into the xgc() function
+\item \code{test_xgc()}: Helper function to use as input into the xgc() function
 
-\item \code{setenv}: Helper function to set temporary environment variable.
+\item \code{setenv()}: Helper function to set temporary environment variable.
 
-\item \code{get_est}: Retrieve epistats object.
+\item \code{get_est()}: Retrieve epistats object.
 
-\item \code{param_sets}: Make parameter sets
+\item \code{param_sets()}: Make parameter sets
+
 }}
-
