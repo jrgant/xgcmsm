@@ -1,9 +1,8 @@
 # SETUP ------------------------------------------------------------------------
 
 pacman::p_load(
-  xgcmsm,
   methods,
-  EpiModelHIV,
+  #EpiModelHIV,
   data.table,
   magrittr,
   rms,
@@ -12,6 +11,8 @@ pacman::p_load(
   lhs,
   rlecuyer
 )
+
+pkgload::load_all()
 
 
 # INITIAL PRIOR RANGES ---------------------------------------------------------
@@ -112,7 +113,7 @@ priors_dt[, (lim_labs) := lapply(.SD, as.numeric), .SDcols = lim_labs][]
 
 saveRDS(
   priors_dt,
-  here::here("burnin", "cal", "sim1_altrim", "sim1_altrim_priors.rds")
+  here::here("simulator_run", "sim1_altrim", "sim1_altrim_priors.rds")
 )
 
 
@@ -159,7 +160,7 @@ priorvals_ok <- sapply(priors, function(.x) {
   })
 }) %>% all
 
-caldir <- here::here("burnin", "cal")
+caldir <- here::here("simulator_run")
 
 if (priornames_ok & priorvals_ok) {
   if (!file.exists(file.path(caldir, "sim1_altrim"))) {
@@ -191,82 +192,38 @@ saveRDS(
 # MAKE BATCH SCRIPTS -----------------------------------------------------------
 
 # make batch scripts to submit arrays
-# SLURM limit is 1200 job requests at a time
-nbatches <- ceiling(seq_len(nsamps) / 1000)
+# SLURM limit is 10,000 job requests at a time
+joblimit <- 10000
+
+# assign each simulation ID to a batch
+nbatches <- ceiling(seq_len(nsamps) / joblimit)
+table(nbatches)
+
+# list of vectors, position in list corresponds to batch ID
 batches <- split(seq_len(nsamps), nbatches)
-offsets <- (unique(nbatches) - 1) * 1000
-#start_index <- unname(sapply(nbatches, function(x) x[[1]]))
 
-# This function writes a batch script to submit a job array.
-make_batch_script_template <- function(jobname, walltime, partition, mem,
-                              ncores, array, offset, log_fullpath,
-                              nsims, nsteps, add_arrivals, simdir) {
+# calculate the offset for each batch
+offsets <- (unique(nbatches) - 1) * 10000
 
-  sb <- "#SBATCH"
 
-  specs <- paste(
-    "#!/bin/bash",
-    paste(sb, "-J", jobname),
-    paste0(sb, " --time=", walltime),
-    paste(sb, "-p", partition),
-    paste0(sb, " --mem=", mem),
-    paste(sb, "-n", ncores),
-    paste0(sb, " --array=", array),
-    paste(sb, "-o", log_fullpath),
-    paste0(
-      sb,
-      " --export=ALL,NSIMS=", nsims,
-      ",NSTEPS=", nsteps,
-      ",ARRIVE_RATE_ADD_PER20K=", add_arrivals,
-      ",SIMDIR=", simdir,
-      ",SLURM_ARRAY_MAP_OFFSET=", offset
-    ),
-    paste(  sb, "--mail-type=ALL"   ),
-    paste(  sb, "--mail-user=jrgant@brown.edu"),
-    "cd ~/data/jgantenb/xgcmsm/",
-    "/users/jgantenb/build-sources/R-4.3.2/bin/Rscript ./burnin/cal/sim1_02_altrim_lhs.r --vanilla",
-    sep = "\n"
-  )
-
-  sdir <- here::here("burnin", "cal", "sim1_altrim")
-  writeLines(
-    text = specs,
-    con = file.path(
-      sdir,
-      paste0("sim1_altrim_batch_template.sh")
-    )
-  )
-
-}
-
+# Write the specification (batch script template)
 make_batch_script_template(
-  jobname = "Sim1-LHS-XGC",
+  specname = "sim1_altrim",
+  slurm_jobname = "lhs-xgc",
   walltime = "2:00:00",
   partition = "batch",
   mem = "3GB",
   ncores = 1,
-  array = "1-1000",
-  log_fullpath = paste0(
-    "/users/jgantenb/data/xgcmsm-00-calibration/burnin/cal/sim1_altrim/.logs/",
-    "LHS-Sim1_ARRAY-%A_JOB-%J_SIMNO-%4a.log"
-  ),
+  array = "1-10000",
   offset ="$OFFSET",
   nsims = 1,
   nsteps = 3120,
   add_arrivals = 1.285,
-  simdir = "~/scratch/sim1_altrim"
+  rootdir = "/users/jgantenb/data/xgcmsm-00-calibration",
+  logname = "LHS-Sim1_ARRAY-%A_JOB-%J_SIMNO-%4a.log",
+  simdir = "~/scratch/sim1_altrim",
+  rscript_file = "simulator_run/sim1_02_altrim_lhs.r",
+  make_submit = TRUE,
+  batches = batches,
+  offsets = offsets
 )
-
-# remove submit file if it already exists
-submitfile <- "~/xgcmsm-00-calibration/simular_run/sim1_altrim/sim1_altrim_batch_submit.sh"
-if (file.exists(submitfile)) {
-  file.remove(submitfile)
-}
-# create the submit file
-for (i in seq_len(length(batches))) {
-  sink(submitfile, append = TRUE)
-  cat("sed 's/$OFFSET/", offsets[i], "/' ",
-      "sim1_altrim_batch_template.sh | sbatch",
-      "\n", sep = "")
-  sink()
-}
