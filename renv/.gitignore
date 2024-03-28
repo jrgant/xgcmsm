@@ -1,5 +1,5 @@
 sandbox/
-# cellar/
+cellar/
 library/
 local/
 lock/
