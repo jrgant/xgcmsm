@@ -1,9 +1,7 @@
 # SETUP ------------------------------------------------------------------------
 
 pacman::p_load(
-  xgcmsm,
   methods,
-  EpiModelHIV,
   data.table,
   magrittr,
   rms,
@@ -12,6 +10,9 @@ pacman::p_load(
   lhs,
   rlecuyer
 )
+
+pkgload::load_all()
+pkgload::load_all("../EpiModelHIV-XGC")
 
 slurm_array_task_id <- as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 

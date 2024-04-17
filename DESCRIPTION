@@ -11,7 +11,7 @@ Description: This package contains the code necessary to calibrate and diagnose 
 Depends: 
   R (>= 3.5.0)
 Imports:
-  EpiModel,
+  EpiModel (>= 2.2.0),
   magrittr,
   data.table,
   rms,

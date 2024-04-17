@@ -2,7 +2,6 @@
 
 pacman::p_load(
   methods,
-  #EpiModelHIV,
   data.table,
   magrittr,
   rms,
