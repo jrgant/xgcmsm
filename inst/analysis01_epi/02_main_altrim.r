@@ -3,7 +3,7 @@
 pacman::p_load(
   xgcmsm,
   methods,
-  EpiModelHIV,
+  EpiModelHIVxgc,
   data.table,
   magrittr,
   rms,

@@ -3,7 +3,7 @@
 ################################################################################
 
 library(pacman)
-p_load(EpiModelHIV, rlecuyer)
+p_load(EpiModelHIVxgc, rlecuyer)
 
 selected_paramsets <-
   readRDS(here::here("inst", "cal", "altrim_analysis_inputs.rds"))
