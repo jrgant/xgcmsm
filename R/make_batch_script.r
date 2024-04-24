@@ -6,8 +6,6 @@
 #' @param specname A character string giving the name of the job specification.
 #'                 This parameter will be used to direct logs and output to the
 #'                 correct locations.
-#' @param slurm_jobname A character string giving the name of the job. Will be
-#'                      appended to specname in the SLURM call.
 #' @param walltime A character string giving the walltime for the job.
 #' @param partition A character string giving the partition for the job.
 #' @param mem A character string giving the memory for the job.
@@ -44,8 +42,9 @@
 #'         This specification is referred to as a template and is used as the
 #'         basis for the job submission file written by `make_submit_file()`.
 #'
+#' @importFrom here here
 #' @export
-make_batch_script_template <- function(specname, slurm_jobname, walltime, partition, mem,
+make_batch_script_template <- function(specname, walltime, partition, mem,
                                        ncores, array, offset, logname,
                                        nsims, nsteps, add_arrivals,
                                        rootdir, simdir,
@@ -56,7 +55,7 @@ make_batch_script_template <- function(specname, slurm_jobname, walltime, partit
                                        ...) {
 
   # set up specification directory (create if doesn't exist)
-  specdir <- file.path(rootdir, "simulator_run", specname)
+  specdir <- here("simulator_run", specname)
   if (!dir.exists(specdir)) {
     dir.create(specdir)
   }
@@ -73,7 +72,7 @@ make_batch_script_template <- function(specname, slurm_jobname, walltime, partit
 
   specs <- paste(
     "#!/bin/bash",
-    paste(sb, "-J", paste0(specname, "_", slurm_jobname)),
+    paste(sb, "-J", specname),
     paste0(sb, " --time=", walltime),
     paste(sb, "-p", partition),
     paste0(sb, " --mem=", mem),
@@ -90,8 +89,8 @@ make_batch_script_template <- function(specname, slurm_jobname, walltime, partit
     ),
     paste(sb, "--mail-type=ALL"   ),
     paste(sb, "--mail-user=jrgant@brown.edu"),
-    paste("cd", rootdir),
-    paste(rscript_exec, file.path(rootdir, rscript_file), rscript_exec_args),
+    paste("cd", rootdir, "|| return"),
+    paste(rscript_exec, paste0(rootdir, "/", rscript_file), rscript_exec_args),
     sep = "\n"
   )
 
