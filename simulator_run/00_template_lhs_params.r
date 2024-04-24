@@ -223,9 +223,7 @@ make_batch_script_template(
   rootdir = ROOTDIR,
   logname = paste0("LHS_", SCENARIO_NAME, "_ARRAY-%A_JOB-%J_SIMNO-%4a.log"),
   simdir = paste0("~/scratch/", SCENARIO_NAME),
-  rscript_file = file.path(
-    SIMRUN_DIR, paste0(SCENARIO_NAME, "_02_run_simulator.r")
-  ),
+  rscript_file = file.path(SIMRUN_DIR, "run_simulator.r"),
   make_submit = TRUE,
   batches = batches,
   offsets = offsets

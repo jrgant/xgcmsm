@@ -10,4 +10,4 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=jrgant@brown.edu
 cd /users/jgantenb/data/xgcmsm-01-calibration || return
-/users/jgantenb/build-sources/R-4.3.2/bin/Rscript /users/jgantenb/data/xgcmsm-01-calibration/simulator_run/sim1_maxrim05_02_run_simulator.r --vanilla
+/users/jgantenb/build-sources/R-4.3.2/bin/Rscript /users/jgantenb/data/xgcmsm-01-calibration/simulator_run/run_simulator.r --vanilla

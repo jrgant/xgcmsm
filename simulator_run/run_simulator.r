@@ -9,18 +9,26 @@ pacman::p_load(
   pscl,
   lhs,
   rlecuyer,
-  EpiModelHIVxgc
+  EpiModelHIVxgc,
+  qs
 )
 
 pkgload::load_all()
 
-slurm_array_task_id <- as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
+slurm_array_task_id <-
+  as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID")) +
+  as.numeric(Sys.getenv("SLURM_ARRAY_MAP_OFFSET"))
+
+slurm_jobname <- Sys.getenv("SLURM_JOB_NAME")
+artnet_analysis_path <- Sys.getenv("ARTNET_ANALYSIS_PATH")
+
+specdir <- here::here("simulator_run", slurm_jobname)
 
 # EPIMODEL SIM -----------------------------------------------------------------
 
 ## select seed for the current job and read it into the current environment
-.lec.Random.seed.table <- readRDS(
-  here::here("burnin", "cal", "sim1", "seeds_sim1.rds")
+.lec.Random.seed.table <- qread(
+  file.path(specdir, paste0(slurm_jobname, "_streams.rds"))
 )
 
 .lec.CurrentStream(
@@ -28,12 +36,12 @@ slurm_array_task_id <- as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 )
 
 ## read in network stats
-netstats    <- get_est("netstats")
-est         <- get_est("netest")
-epistats    <- get_est("epistats")
+netstats    <- get_est("netstats", artnet_analysis_path)
+est         <- get_est("netest", artnet_analysis_path)
+epistats    <- get_est("epistats", artnet_analysis_path)
 
-lhs_real    <- readRDS(
-  here::here("burnin", "cal", "sim1", "lhs_sim1.rds")
+lhs_real    <- qread(
+  file.path(specdir, paste0(slurm_jobname, "_lhs_draws.qs"))
 )
 
 # Set environment variables (parameter sets) based on list position
@@ -45,7 +53,7 @@ do.call(
 
 # Check that manually set environment variables (set in sbatch)
 if (Sys.getenv("SIMDIR") == "") {
-  outpath <- "~/scratch/sim1"
+  outpath <- "~/scratch/sim1_altrim"
 } else {
   outpath <- Sys.getenv("SIMDIR")
 }
@@ -226,7 +234,7 @@ control <- control_msm(
   cdcExposureSite_Kissing = FALSE, # FLAG: Kissing considered exposure for CDC protocol?
   tergmLite               = TRUE, # NOTE Must set to avoid error from saveout.net()
   debug_stitx             = FALSE,
-  save.network		        = FALSE,
+  save.network            = FALSE,
   verbose                 = FALSE
 )
 
@@ -234,7 +242,7 @@ sim <- netsim(est, param, init, control)
 
 .lec.CurrentStreamEnd()
 
-sim[["seed.table.state"]] <- .lec.GetState(
+sim[["stream.end.state"]] <- .lec.GetState(
   .lec.Random.seed.table$name[slurm_array_task_id]
 )
 
@@ -245,12 +253,13 @@ sim[["seed.table.state"]] <- .lec.GetState(
 
 if (!dir.exists(outpath)) dir.create(outpath)
 
-saveRDS(
-  object = sim,
+qsave(
+  object = sim[c("stream.end.state", "param", "epi")],
   file = file.path(
     outpath,
     paste0(
-      sprintf("episim_%04d", slurm_array_task_id),
-      "_", Sys.getenv("SLURM_JOB_ID"), ".rds")
+      sprintf("episim_%06d", slurm_array_task_id),
+      "_", Sys.getenv("SLURM_JOB_ID"), ".qs"
+    )
   )
 )
