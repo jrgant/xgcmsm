@@ -31,9 +31,9 @@ slurm_array_task_id <-
 )
 
 ## read in network stats
-netstats    <- get_est("netstats")
-est         <- get_est("netest")
-epistats    <- get_est("epistats")
+netstats    <- get_est("netstats", Sys.getenv("ARTNET_ANALYSIS_PATH"))
+est         <- get_est("netest", Sys.getenv("ARTNET_ANALYSIS_PATH"))
+epistats    <- get_est("epistats", Sys.getenv("ARTNET_ANALYSIS_PATH"))
 
 lhs_real    <- readRDS(
   here::here("burnin", "cal", "sim1_altrim", "lhs_sim1_altrim.rds")
