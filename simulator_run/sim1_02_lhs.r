@@ -8,11 +8,11 @@ pacman::p_load(
   stringr,
   pscl,
   lhs,
-  rlecuyer
+  rlecuyer,
+  EpiModelHIVxgc
 )
 
 pkgload::load_all()
-pkgload::load_all("../EpiModelHIV-XGC")
 
 slurm_array_task_id <- as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID"))
 

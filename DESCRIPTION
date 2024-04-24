@@ -9,9 +9,10 @@ Authors@R:
            comment = c(ORCID = "0000-0002-8144-4273"))
 Description: This package contains the code necessary to calibrate and diagnose EpiModelHIV-XGC.
 Depends: 
-  R (>= 3.5.0)
+  R (>= 4.2.0)
 Imports:
-  EpiModel (>= 2.2.0),
+  EpiModelHIVxgc,
+  EpiModel (>= 2.4),
   magrittr,
   data.table,
   rms,

@@ -44,8 +44,10 @@ setenv <- function(nsteps = 200,
 
 
 #' @describeIn helpers Retrieve epistats object.
-#' @export
-#' @importFrom here here
+#' @param string Which network estimates to retrieve. One of: epistats,
+#'               netest, or netstats.
+#' @param artnet_analysis_path Path to ARTnet analysis directory.
+#'
 #' @details 'get_est' checks for existence of ARTnet code repo. If so,
 #' it checks which project's copy of a file is newer. If the version
 #' in ARTnet code repo is newer, save it to this project and load. Otherwise,
@@ -53,17 +55,20 @@ setenv <- function(nsteps = 200,
 #' working with the most recent file. Will load the local file by default
 #' if the ARTnet repo's file directories are not found (so that scripts contained
 #' in this package won't fail in the absence of the ARTnet code repo.)
-get_est <- function(string = c("epistats", "netest", "netstats")) {
+#' @importFrom here here
+#' @export
+get_est <- function(string = c("epistats", "netest", "netstats"),
+                    artnet_analysis_path) {
 
   proj_root <- here::here()
   loc_file <- here::here("est", paste0(string, ".Rds"))
 
   if (string %in% c("epistats", "netstats")) {
-    orig_dir <- "../egcmsm_artnet/netstats"
+    orig_dir <- file.path(artnet_analysis_path, "netstats")
   }
 
   if (string == c("netest")) {
-    orig_dir <- "../egcmsm_artnet/netest"
+    orig_dir <- file.path(artnet_analysis_path, "netest")
   }
 
   if (dir.exists(orig_dir)) {

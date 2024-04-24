@@ -1,9 +1,9 @@
 library(data.table)
-suppressMessages(library(EpiModelHIV))
+suppressMessages(library(EpiModelHIVxgc))
 library(ggplot2)
 library(ggthemes)
 
-arate_dir <- here::here("burnin", "cal", "sim1")
+arate_dir <- here::here("simulator_run", "sim1")
 af <- list.files(arate_dir, "Arrive_", full.names = TRUE)
 an <- list.files(arate_dir, "Arrive_")
 

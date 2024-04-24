@@ -8,11 +8,11 @@ pacman::p_load(
   stringr,
   pscl,
   lhs,
-  rlecuyer
+  rlecuyer,
+  EpiModelHIVxgc
 )
 
 pkgload::load_all()
-pkgload::load_all("../EpiModelHIV-XGC")
 
 slurm_array_task_id <-
   as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID")) +
@@ -254,6 +254,7 @@ saveRDS(
     outpath,
     paste0(
       sprintf("episim_%06d", slurm_array_task_id),
-      "_", Sys.getenv("SLURM_JOB_ID"), ".rds")
+      "_", Sys.getenv("SLURM_JOB_ID"), ".rds"
+    )
   )
 )

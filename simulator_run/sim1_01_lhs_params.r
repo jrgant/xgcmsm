@@ -1,17 +1,18 @@
 # SETUP ------------------------------------------------------------------------
 
 pacman::p_load(
-  xgcmsm,
   methods,
-  EpiModelHIV,
   data.table,
   magrittr,
   rms,
   stringr,
   pscl,
   lhs,
-  rlecuyer
+  rlecuyer,
+  qs
 )
+
+pkgload::load_all()
 
 
 # INITIAL PRIOR RANGES ---------------------------------------------------------
@@ -80,8 +81,8 @@ priors <- list(
   pvec(0, 10,  "KISS_RATE_CASUAL"),
   pvec(0.5, 1, "KISS_PROB_ONETIME"),
   # rimming rate/prob priors
-  pvec(0, 10,  "RIM_RATE_MAIN"),
-  pvec(0, 10,  "RIM_RATE_CASUAL"),
+  pvec(0, RIM_RATE_MAIN_MAX,  "RIM_RATE_MAIN"),
+  pvec(0, RIM_RATE_CASL_MAX,  "RIM_RATE_CASUAL"),
   pvec(0, 1,   "RIM_PROB_ONETIME"),
   # HIV transmission prob. scalars
   pvec(0.75, 3, "SCALAR_HIV_TRANS_PROB_BLACK"), # black
@@ -110,13 +111,21 @@ setnames(priors_dt, c("V2", "V3", "V4"), c(lim_labs, "input"))
 
 priors_dt[, (lim_labs) := lapply(.SD, as.numeric), .SDcols = lim_labs][]
 
-saveRDS(priors_dt, here::here("burnin", "cal", "sim1", "sim1_priors.rds"))
+
+if (!file.exists(here::here(SIMRUN_DIR, SCENARIO_NAME))) {
+  dir.create(here::here(SIMRUN_DIR, SCENARIO_NAME))
+}
+
+qs::qsave(
+  priors_dt,
+  here::here(SIMRUN_DIR, SCENARIO_NAME, paste0(SCENARIO_NAME, "_priors.qs"))
+)
 
 
 # DRAW LATIN HYPERCUBE ---------------------------------------------------------
 
-set.seed(1971)
-lhs_unif <- randomLHS(5000, length(priors))
+nsamps <- 100000
+lhs_unif <- randomLHS(nsamps, length(priors))
 
 draw_param <- function(lhscol, lhsrow) {
   p_min <- as.numeric(priors[[lhscol]][2])
@@ -155,13 +164,14 @@ priorvals_ok <- sapply(priors, function(.x) {
   })
 }) %>% all
 
-caldir <- here::here("burnin", "cal")
-
 if (priornames_ok & priorvals_ok) {
-  if (!file.exists(file.path(caldir, "sim1"))) {
-    dir.create(file.path(caldir, "sim1"))
-  }
-  saveRDS(lhs_real, file = file.path(caldir, "sim1", "lhs_sim1.rds"))
+  qs::qsave(
+    lhs_real,
+    file = here::here(
+      SIMRUN_DIR, SCENARIO_NAME,
+      paste0(SCENARIO_NAME, "_lhs_draws.qs")
+    )
+  )
 } else {
   stop("Check prior specification.")
 }
@@ -175,73 +185,48 @@ if (priornames_ok & priorvals_ok) {
 streams <- paste0("str", sprintf("%04d", seq_along(lhs_real)))
 .lec.CreateStream(streams)
 
-saveRDS(.lec.Random.seed.table, file.path(caldir, "sim1", "seeds_sim1.rds"))
+qs::qsave(
+  .lec.Random.seed.table,
+  here::here(SIMRUN_DIR, SCENARIO_NAME, paste0(SCENARIO_NAME, "_streams.qs"))
+)
 
 
 # MAKE BATCH SCRIPTS -----------------------------------------------------------
 
 # make batch scripts to submit arrays
-# SLURM limit is 1200 job requests at a time
-nbatches <- 5
-start_index <- seq(1, length(lhs_real), length(lhs_real) / nbatches)
+# SLURM limit is 10,000 job requests at a time
+joblimit <- 10000
 
-arrays <- sapply(
-  start_index,
-  function(.x) paste0(.x, "-", .x + (length(lhs_real) / nbatches) - 1)
+# assign each simulation ID to a batch
+nbatches <- ceiling(seq_len(nsamps) / joblimit)
+table(nbatches)
+
+# list of vectors, position in list corresponds to batch ID
+batches <- split(seq_len(nsamps), nbatches)
+
+# calculate the offset for each batch
+offsets <- (unique(nbatches) - 1) * 10000
+
+
+# Write the specification (batch script template)
+make_batch_script_template(
+  specname = SCENARIO_NAME,
+  walltime = "2:00:00",
+  partition = "batch",
+  mem = "3GB",
+  ncores = 1,
+  array = "1-10000",
+  offset = "$OFFSET",
+  nsims = 1,
+  nsteps = 3120,
+  add_arrivals = 1.285,
+  rootdir = ROOTDIR,
+  logname = paste0("LHS_", SCENARIO_NAME, "_ARRAY-%A_JOB-%J_SIMNO-%4a.log"),
+  simdir = paste0("~/scratch/", SCENARIO_NAME),
+  rscript_file = file.path(
+    ROOTDIR, SIMRUN_DIR, paste0(SCENARIO_NAME, "_02_run_simulator.r")
+  ),
+  make_submit = TRUE,
+  batches = batches,
+  offsets = offsets
 )
-
-# This function writes a batch script to submit a job array.
-make_batch_script <- function(jobname, walltime, partition, mem,
-                              ncores, array, log_fullpath, batchid,
-                              nsims, nsteps, add_arrivals, simdir) {
-
-  sb <- "#SBATCH"
-
-  specs <- paste(
-    "#!/bin/bash",
-    paste(  sb, "-J", jobname       ),
-    paste0( sb, " --time=", walltime ),
-    paste(  sb, "-p", partition     ),
-    paste0( sb, " --mem=", mem       ),
-    paste(  sb, "-n", ncores        ),
-    paste0( sb, " --array=", array   ),
-    paste(  sb, "-o", log_fullpath  ),
-    paste0(
-      sb,
-      " --export=ALL,NSIMS=", nsims,
-      ",NSTEPS=", nsteps,
-      ",ARRIVE_RATE_ADD_PER20K=", add_arrivals,
-      ",SIMDIR=", simdir
-    ),
-    paste(  sb, "--mail-type=ALL"   ),
-    paste(  sb, "--mail-user=jrgant@brown.edu"),
-    "module load R/4.0.3",
-    "cd ~/data/jgantenb/xgcmsm/",
-    "Rscript ./burnin/cal/sim1_02_lhs.r --vanilla",
-    sep = "\n"
-  )
-
-  sdir <- here::here("burnin", "cal", "sim1")
-  writeLines(
-    text = specs,
-    con = file.path(sdir, paste0("sim1_batch", batchid, ".sh"))
-  )
-
-}
-
-for (i in seq_len(length(arrays))) {
-  make_batch_script(
-    jobname = "Sim1-LHS-XGC",
-    walltime = "3:00:00",
-    partition = "batch",
-    mem = "3GB",
-    ncores = 1,
-    array = arrays[i],
-    log_fullpath = "LHS-Sim1_ARRAY-%A_JOB-%J_SIMNO-%4a.log",
-    batchid = i,
-    nsims = 1,
-    nsteps = 3120,
-    add_arrivals = 1.285,
-    simdir = "~/scratch/sim1"
-  )
-}
