@@ -1,0 +1,11 @@
+Sys.setenv(OFFSET = 0,
+	   ARRAY_TASK_ID = 1,
+	   SLURM_JOB_NAME = "sim1_maxrim05",
+	   NSIMS = 1,
+	   NSTEPS = 50,
+	   SLURM_NPROCS = 1,
+	   ARRIVE_RATE_ADD_PER20K = 1.285,
+	   SIMDIR = "~/scratch/xgctesting",
+	   SLURM_ARRAY_MAP_OFFSET = 0,
+	   SLURM_ARRAY_TASK_ID = "555",
+	   ARTNET_ANALYSIS_PATH = "../egcmsm_artnet")
