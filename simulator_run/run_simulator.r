@@ -15,6 +15,11 @@ pacman::p_load(
 
 pkgload::load_all()
 
+pkgload::load_all("../EpiModelHIV-XGC/") # for convenience while developing; remove after building
+library(EpiModel)
+# Set up a dummy environment during development
+# source("simulator_run//00_dummy_environment.r")
+
 slurm_array_task_id <-
   as.numeric(Sys.getenv("SLURM_ARRAY_TASK_ID")) +
   as.numeric(Sys.getenv("SLURM_ARRAY_MAP_OFFSET"))
@@ -28,7 +33,7 @@ specdir <- here::here("simulator_run", slurm_jobname)
 
 ## select seed for the current job and read it into the current environment
 .lec.Random.seed.table <- qread(
-  file.path(specdir, paste0(slurm_jobname, "_streams.rds"))
+  file.path(specdir, paste0(slurm_jobname, "_streams.qs"))
 )
 
 .lec.CurrentStream(
@@ -197,9 +202,9 @@ nsim_env <- fmt_getenv("NSIMS")
 nsteps_env <- fmt_getenv("NSTEPS")
 ncores_env <- fmt_getenv("SLURM_NPROCS")
 
-print(paste("NSIMS:", nsim_env))
-print(paste("NSTEPS:", nsteps_env))
-print(paste("SLURM_NPROCS:", ncores_env))
+message(paste("NSIMS:", nsim_env))
+message(paste("NSTEPS:", nsteps_env))
+message(paste("SLURM_NPROCS:", ncores_env))
 
 control <- control_msm(
   # Computing options (set in batch script or using sbatch on SLURM)
@@ -225,17 +230,22 @@ control <- control_msm(
   stitx.FUN         = stitx_msm,
   stitrans.FUN      = stitrans_msm_rand,
   prev.FUN          = prevalence_msm,
+  dat.updates       = update_degrees,
   # Epidemic simulation options
-  transRoute_Kissing      = TRUE,  # FLAG: Toggle kissing transmission
-  transRoute_Rimming      = TRUE,  # FLAG: Toggle rimming transmission
-  gcUntreatedRecovDist    = "geom",
-  stiScreeningProtocol    = "base",
-  skip.check              = TRUE,
-  cdcExposureSite_Kissing = FALSE, # FLAG: Kissing considered exposure for CDC protocol?
-  tergmLite               = TRUE, # NOTE Must set to avoid error from saveout.net()
-  debug_stitx             = FALSE,
-  save.network            = FALSE,
-  verbose                 = FALSE
+  transRoute_Kissing        = TRUE,  # FLAG: Toggle kissing transmission
+  transRoute_Rimming        = TRUE,  # FLAG: Toggle rimming transmission
+  gcUntreatedRecovDist      = "geom",
+  stiScreeningProtocol      = "base",
+  skip.check                = TRUE,
+  cdcExposureSite_Kissing   = FALSE, # FLAG: Kissing considered exposure for CDC protocol?
+  tergmLite                 = TRUE,  # NOTE Must set to avoid error from saveout.net()
+  tergmLite.track.duration  = FALSE, # Set based on EpiModel/EpiModelHIV-p
+  set.control.ergm          = control.simulate.formula(MCMC.burnin = 2e5), # as above
+  set.control.term          = control.simulate.formula.tergm(MCMC.burnin.min = 5000), # as above
+  cumulative.edgelist       = FALSE,
+  truncate.el.cuml          = 0,
+  debug_stitx               = FALSE,
+  save.network              = FALSE
 )
 
 sim <- netsim(est, param, init, control)
