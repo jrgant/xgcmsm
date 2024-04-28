@@ -10,6 +10,7 @@
 #' @param partition A character string giving the partition for the job.
 #' @param mem A character string giving the memory for the job.
 #' @param ncores An integer giving the number of cores for the job.
+#' @param nnodes An integer giving the maximum number of CPU nodes to use.
 #' @param array A character string giving the array ID range.
 #' @param offset A character string giving the offset that will map the array
 #'               IDs to the correct simulation number. Environment variable.
@@ -45,7 +46,7 @@
 #' @importFrom here here
 #' @export
 make_batch_script_template <- function(specname, walltime, partition, mem,
-                                       ncores, array, offset, logname,
+                                       ncores, nnodes = 1, array, offset, logname,
                                        nsims, nsteps, add_arrivals,
                                        rootdir, simdir,
                                        rscript_exec = "/users/jgantenb/build-sources/R-4.3.2/bin/Rscript",
@@ -77,6 +78,7 @@ make_batch_script_template <- function(specname, walltime, partition, mem,
     paste(sb, "-p", partition),
     paste0(sb, " --mem=", mem),
     paste(sb, "-n", ncores),
+    paste(sb, "-N", nnodes),
     paste0(sb, " --array=", array),
     paste(sb, "-o", log_fullpath),
     paste0(

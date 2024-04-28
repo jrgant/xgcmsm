@@ -195,7 +195,7 @@ qs::qsave(
 
 # make batch scripts to submit arrays
 # SLURM limit is 10,000 job requests at a time
-joblimit <- 10000
+joblimit <- 5000
 
 # assign each simulation ID to a batch
 nbatches <- ceiling(seq_len(nsamps) / joblimit)
@@ -205,7 +205,7 @@ table(nbatches)
 batches <- split(seq_len(nsamps), nbatches)
 
 # calculate the offset for each batch
-offsets <- (unique(nbatches) - 1) * 10000
+offsets <- (unique(nbatches) - 1) * joblimit
 
 
 # Write the specification (batch script template)
@@ -215,7 +215,7 @@ make_batch_script_template(
   partition = "batch",
   mem = "3GB",
   ncores = 1,
-  array = "1-10000",
+  array = paste0("1-", joblimit),
   offset = "$OFFSET",
   nsims = 1,
   nsteps = 3120,
@@ -223,6 +223,7 @@ make_batch_script_template(
   rootdir = ROOTDIR,
   logname = paste0("LHS_", SCENARIO_NAME, "_ARRAY-%A_JOB-%J_SIMNO-%4a.log"),
   simdir = paste0("~/scratch/", SCENARIO_NAME),
+  rscript_exec = "/users/jgantenb/build-sources/R-4.3.3/bin/Rscript",
   rscript_file = file.path(SIMRUN_DIR, "run_simulator.r"),
   make_submit = TRUE,
   batches = batches,
